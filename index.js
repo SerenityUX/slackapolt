@@ -126,7 +126,7 @@ app.command(/.*?/, async (args) => {
         },
         title: {
           type: "plain_text",
-          text: "Pelting Station",
+          text: "Pelting Station ",
           emoji: true,
         },
         blocks: [
