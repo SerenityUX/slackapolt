@@ -27,6 +27,44 @@ const preselectedChannels = [
   "welcome",
 ];
 
+async function inviteGuestToSlack({ email, channels, _customMessage }) {
+  // This is an undocumented API method found in https://github.com/ErikKalkoken/slackApiDoc/pull/70
+  // Unlike the documention in that PR, we're driving it not with a legacy token but a browser storage+cookie pair
+
+  // The SLACK_COOKIE is a xoxd-* token found in browser cookies under the key 'd'
+  // The SLACK_BROWSER_TOKEN is a xoxc-* token found in browser local storage using this script: https://gist.github.com/maxwofford/5779ea072a5485ae3b324f03bc5738e1
+
+  // I haven't yet found out how to add custom messages, so those are ignored for now
+  const cookieValue = `d=${process.env.SLACK_COOKIE}`
+
+  // Create a new Headers object
+  const headers = new Headers()
+
+  // Add the cookie to the headers
+  headers.append('Cookie', cookieValue)
+  headers.append('Content-Type', 'application/json')
+  headers.append('Authorization', `Bearer ${process.env.SLACK_BROWSER_TOKEN}`)
+
+  const data = JSON.stringify({
+    token: process.env.SLACK_BROWSER_TOKEN,
+    invites: [
+      {
+        email,
+        // type: 'restricted',
+        mode: 'manual',
+      },
+    ],
+    // restricted: true,
+    channels: channels.join(','),
+  })
+
+  return fetch(`https://slack.com/api/users.admin.inviteBulk`, {
+    headers,
+    method: 'POST',
+    body: data,
+  }).then((r) => r.json()).then(r => console.log(r));
+}
+
 // const addToChannels = async (user, event) => {
 //   await upgradeUser(user)
 //   await sleep(1000) // timeout to prevent race-condition during channel invites
@@ -88,7 +126,7 @@ app.command(/.*?/, async (args) => {
         },
         title: {
           type: "plain_text",
-          text: "Slack Invite Pelting Station",
+          text: "Pelting Station",
           emoji: true,
         },
         blocks: [
@@ -129,7 +167,7 @@ app.command(/.*?/, async (args) => {
             },
             label: {
               type: "plain_text",
-              text: "Leave a great message for your member",
+              text: "Words for your members to unravel once hit by the shot",
               emoji: true,
             },
           },
@@ -156,11 +194,75 @@ app.view("invite_form", async (args) => {
   const channelsSelected = view.state.values.section678.text1234.selected_channels; // Extract selected channels
   
   console.log(channelsSelected)
-  
-  const emailInput = view.state.values.fAqMv["email_text_input-action"].value; // Extract email input
+
+  console.log(view.state.values)
+
+  const emailInput = view.state.values.L12RZ["email_text_input-action"].value; // Extract email input
   console.log(emailInput)
-  const customInviteMessage = view.state.values.HmCd9["custom_invite_message-action"].value; // Extract custom invite message
+
+  const customInviteMessage = view.state.values.wdFiS["custom_invite_message-action"].value; // Extract custom invite message
   console.log(customInviteMessage)
+
+  await inviteGuestToSlack({
+    email: emailInput,
+    channels: channelsSelected,
+    customMessage: customInviteMessage,
+  })
+  
+    const emailData = {
+      personalizations: [
+        {
+          to: [
+            {
+              email: emailInput, // Replace with the recipient's email address
+            },
+          ],
+          subject: 'You just got hit by a slack-a-shot (Hack Club)',
+        },
+      ],
+      from: {
+        email: 'thomas@hackclub.com', // Replace with the sender's email address
+      },
+      content: [
+        {
+          type: 'text/html',
+          value: `Hey! Your club leader invited you. Here is <i>a note</i> they left for you:<br/>
+          <br/>
+  "<b>${customInviteMessage}</b>" - Your Club Leader
+  <br/>
+  <br/>
+
+You just received another email that contains the actual slack invite! Look forward to seeing you there!
+<br/>
+<br/>
+~Thomas, Clubs
+          `,
+        },
+      ],
+    };
+  
+    const requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.SendGrid}`,
+      },
+      body: JSON.stringify(emailData),
+    };
+  
+    try {
+      const response = await fetch("https://api.sendgrid.com/v3/mail/send", requestOptions);
+  
+      if (!response.ok) {
+        throw new Error(`Error sending email: ${response.statusText}`);
+      }
+  
+      console.log('Email sent successfully!');
+    } catch (error) {
+      console.error('Error:', error.message);
+    }
+  
+
 
   // Move the 'await respond({ text: "Invite Sent" });' here
   await client.chat.postEphemeral({
