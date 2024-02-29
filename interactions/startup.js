@@ -1,9 +1,9 @@
 const { client } = require('../app')
 const { transcript } = require('../util/transcript')
-const { metrics } = require('../util/metrics')
+// const { metrics } = require('../util/metrics')
 
 async function startup() {
-  metrics.increment('events.startup', 1)
+  // metrics.increment('events.startup', 1)
   await client.chat.postMessage({
     text: transcript('startup.message'),
     channel: transcript('channels.toriels-diary'),

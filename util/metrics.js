@@ -1,18 +1,18 @@
-const { StatsD } = require('node-statsd')
+// const { StatsD } = require('node-statsd')
 
-const env = process.env.NODE_ENV || 'development'
-const graphite = process.env.GRAPHITE_HOST
+// const env = process.env.NODE_ENV || 'development'
+// const graphite = process.env.GRAPHITE_HOST
 
-if (env == 'production' && graphite == null) {
-  throw new Error('Graphite is not working')
-}
+// if (env == 'production' && graphite == null) {
+//   throw new Error('Graphite is not working')
+// }
 
-const options = {
-  host: graphite,
-  port: 8125,
-  prefix: `${env}.toriel.`,
-}
+// const options = {
+//   host: graphite,
+//   port: 8125,
+//   prefix: `${env}.toriel.`,
+// }
 
-const metrics = new StatsD(options)
+// const metrics = new StatsD(options)
 
-module.exports = { metrics }
+// module.exports = { metrics }
